@@ -222,7 +222,12 @@ struct Node
     int idx;
     double* jointAng;
     vector<Node*>* adjNodes; // adjacent nodes/neighbors
+    vector<double>* adjNodesDist; 
     Node* parent;
+    double f_val;
+    double g_val;
+    double cost;
+    double h_val;
 };
 
 // Generate random arm configuration
@@ -363,7 +368,7 @@ static void prmPlanner(double*	map,
       int* planlength
     )
 {
-    int V = 30500;
+    int V = 10000;
     double kNNrad = 0.0;
     int i = 0;
     double epsilon = PI/4;
@@ -374,7 +379,6 @@ static void prmPlanner(double*	map,
    
     while (i < V)
     {
-      i++;
       vector<Node*>* nearestKNodes = new vector<Node*>();
       vector<double>* nearestKDist = new vector<double>();
       currConfig = (double*) malloc(sizeof(double)*armDOF);
@@ -385,10 +389,13 @@ static void prmPlanner(double*	map,
       {
         continue;
       }
+      i++;
       currNode->jointAng = currConfig;
       currNode->adjNodes = new vector<Node*>();
+      currNode->adjNodesDist = new vector<double>();
       currNode->idx = i;
       graph->push_back(currNode);
+      printf("Iteration %d of %d \n", i, V);
       kNNrad =  epsilon;
       findNeighbors(graph, nearestKNodes, nearestKDist,currConfig, kNNrad);
       
@@ -406,7 +413,9 @@ static void prmPlanner(double*	map,
           continue;
         }
         currNode->adjNodes->push_back(adjNode);
+        currNode->adjNodesDist->push_back(neighborDist);
         adjNode->adjNodes->push_back(currNode);
+        adjNode->adjNodesDist->push_back(neighborDist);
       }
       free(nearestKNodes);
       free(nearestKDist);
@@ -426,7 +435,9 @@ static void prmPlanner(double*	map,
     initNode->idx = 0;
     goalNode->idx = V + 1;
     initNode->adjNodes = new vector<Node*>();
+    initNode->adjNodesDist = new vector<double>();
     goalNode->adjNodes = new vector<Node*>();
+    goalNode->adjNodesDist = new vector<double>();
     graph->push_back(initNode);
     graph->push_back(goalNode);
     vector<Node*>* closestNodes = new vector<Node*>();
@@ -449,8 +460,11 @@ static void prmPlanner(double*	map,
       }
       printf("Start Node connected \n");
       initNode->adjNodes->push_back(neighborNode);
+      initNode->adjNodesDist->push_back(neighborDist);
       neighborNode->adjNodes->push_back(initNode);
+      neighborNode->adjNodesDist->push_back(neighborDist);
     }
+    
     vector<Node*>* closestNodesGoal = new vector<Node*>();
     vector<double>* closestDistGoal = new vector<double>();
     
@@ -471,7 +485,9 @@ static void prmPlanner(double*	map,
       }
       printf("Goal Node connected \n");
       goalNode->adjNodes->push_back(neighborNode);
+      goalNode->adjNodesDist->push_back(neighborDist);
       neighborNode->adjNodes->push_back(goalNode);
+      neighborNode->adjNodesDist->push_back(neighborDist);
     }
 
     if (hasPath(initNode, goalNode,V))
@@ -504,6 +520,7 @@ static void prmPlanner(double*	map,
       }
       for (int ll=0;ll<currNode->adjNodes->size(); ll++)
       {
+        double dist = (*(currNode->adjNodesDist))[ll];
         adjNode = (*(currNode->adjNodes))[ll];
         if (visited[adjNode->idx]== false)
         {
@@ -553,6 +570,7 @@ static void prmPlanner(double*	map,
 
     free(closestDist);
     free(closestDistGoal);
+    
   return;
 }
 
