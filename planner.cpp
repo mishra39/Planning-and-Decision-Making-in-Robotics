@@ -14,6 +14,8 @@
 #include <queue>
 #include "mex.h"
 
+using namespace std;
+
 /* Input Arguments */
 #define	MAP_IN      prhs[0]
 #define	ARMSTART_IN	prhs[1]
@@ -44,8 +46,6 @@
 
 //the length of each link in the arm (should be the same as the one used in runtest.m)
 #define LINKLENGTH_CELLS 10
-#define armDOF 5
-using namespace std;
 
 typedef struct {
   int X1, Y1;
@@ -216,106 +216,18 @@ int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map,
     return 1;
 }
 
-// roadmap (graph) for the configuration space
-class roadMap 
+#define armDOF 5
+struct Node
 {
-private:
-  double*	map;
-  int x_size;
-  int y_size;
-  double* armstart_anglesV_rad;
-  double* armgoal_anglesV_rad;
-  int numofDOFs;
-  double*** plan;
-  int* planlength;
-public:
-  struct Node
-    {
-      int idx;
-      double jointAng[armDOF];
-      double g_val;
-    };
-    struct greaterG
-    {
-      int operator() (const Node* cl, const Node* cr) const // cl: left cr: right
-      {
-          // this acts as greater in pq so we create a min-heap
-          return (cl->g_val) > (cr->g_val);
-      }
-    };
-  int V; // total verticies in the roadMap
-  vector<pair<Node*,double>> adjList[200]; // Weighted graph adjacency list
-  unordered_map<int,Node*> nodeMap;
-  int kNN; // number of nearest neighbors
-  Node *prmNode;
-  roadMap(double *map, int x_size, int y_size, int V, int kNN)
-  {
-    this->V = V;
-    this->kNN = kNN;
-    this->map = map;
-    this->x_size = x_size;
-    this->y_size = y_size;
-  }
+    int idx;
+    double* jointAng;
+    vector<Node*>* adjNodes; // adjacent nodes/neighbors
+    Node* parent;
+};
 
-  void addEdge(Node* x,Node* y, double wt)
-  {
-    adjList[x->idx].push_back(make_pair(y,wt));
-    adjList[y->idx].push_back(make_pair(x,wt));
-  }
-  
-  // Dijsktra to find shortest path
-  void Dijsktra()
-  {
-    priority_queue<Node*, vector<Node*>, greaterG> open_list;
-    unordered_map<int, Node*> visited;
-    unordered_map<int, bool> closed;
-    Node* newNode, *currNode, *adjNode;
-    vector<Node*>::iterator it;
-
-    // push start node to open list
-    newNode = new Node();
-    newNode = nodeMap[0];
-    open_list.push(newNode);
-    visited[0] = newNode;
-    newNode->g_val = 0;
-/*
-    // Expand graph
-    while(!open_list.empty())
-    {
-      currNode = open_list.top();
-      open_list.pop();
-
-      if (closed[currNode->idx]) {continue;}
-      closed[currNode->idx] = true;
-      
-      // Explore the adjacent nodes
-      for (it = adjList[currNode->idx].begin(); it != adjList[currNode->idx].end(); ++i)
-      {
-        if (currNode->idx = (*it)->idx) {continue;};
-        if (closed[(*it)->idx]) {continue;}; // if the state has been fully expanded
-
-        if (visited[(*it)->idx])
-        {
-          adjNode = new Node();
-          if () // in case g value is not optimal
-        }
-
-        else // if the node has not been visited yet
-        {
-          adjNode = new Node();
-          adjNode->g_val = 0;
-
-
-        }
-      }
-    }*/
-  }
-
-
-  // Generate random arm configuration
-double* randomConfig()
+// Generate random arm configuration
+void randomConfig(double** config_arr)
 {
-  static double config_arr[armDOF];
   random_device rd;
   default_random_engine gen(rd());
   uniform_real_distribution<double> distribution(0, 2*PI);
@@ -323,60 +235,73 @@ double* randomConfig()
   for (int i = 0 ; i < 5; i++)
   {
     double pose = distribution(gen);
-    config_arr[i] = pose;
+    (*config_arr)[i] = pose;
   }
- // printf("New Pose verification: %.2f , %.2f \n", newConfig[4], config_arr[4]);
-  return config_arr;
 }
-  void createMap()
-  {
-    int i = 0;
-    while (i < V)
+bool sortbysec(const pair<Node*,double> &a, 
+              const pair<Node*,double> &b) 
+{ 
+    return (a.second < b.second); 
+} 
+static void findNeighbors(vector<Node*>* graph, vector<Node*>* nearestKNodes,
+  vector<double>* nearestKDist, double* config, double nnRad) // i represents the total number of nodes in the roadmap so far
+{
+
+  // traverse the graph and compute distance between nodes
+    int j=0;
+    double dist = 0;
+    //printf("Starting Neighbor Search \n");
+    for (j = 0; j < graph->size(); j++)
     {
-      double *newConfig_arr;
-      newConfig_arr = randomConfig(); // find randomConfig, check validity and collision
-      if (!IsValidArmConfiguration(newConfig_arr, armDOF, map, x_size, y_size))
+      double dist = 0;
+      Node* adjNode = (*graph)[j];
+      for (int i = 0; i < armDOF; i++)
       {
-       // printf("Invalid Random Pose \n");
-        continue;
+        dist += pow((adjNode->jointAng[i] - config[i]),2);
       }
-      i++; // Start appending with index 1 (index zero will be for start node)
-      //printf("Valid Random Pose \n");
-      prmNode  = new Node();
-      prmNode->idx = i; // assign index to node
-      prmNode->g_val = 0; // initialize g-value
-      //printf("Assigned Random Pose to new node\n");
-      for (int s=0; s<armDOF; s++)
+
+      dist  = sqrt(dist);
+      if (dist <= nnRad)
       {
-        prmNode->jointAng[s] = newConfig_arr[s]; // node configuration
-        //printf("Assigned Angles new node\n");
+        //printf("neighbor found \n");
+        nearestKNodes->push_back(adjNode);
+        nearestKDist->push_back(dist);
       }
-      nodeMap[i] = prmNode;
-      //printf("At %d we have %d \n",i,nodeMap.count(i));
-      vector<pair<double,int>> nearestK;
-      //printf("Finding Neighbors \n");
-      nearestK = findNeighbors(prmNode,i);  // find k-nearest neighbors
-      //printf("Neighbor search over \n");
-      // connect to the k-nearest neighbors
-      for (auto v:nearestK)
-      { 
-        //printf("Closest node returned at %d\n", v);
-        // check if path already exists
-        if (hasPath(prmNode,nodeMap[v.second]) == false ) // if a path does not exist, add an edge
+    }/*
+      for (int k = 0; k < armDOF; k++)
         {
-          printf("Adding Edge between %d and %d\n", prmNode->idx, nodeMap[v.second]->idx);
-          addEdge(prmNode,nodeMap[v.second], v.first);
+          dist +=  pow(fabs(adjNode->jointAng[k] - currConfig[k]),2); 
         }
-        else 
-        {
-          printf("Path already exists between %d and %d\n", prmNode->idx, nodeMap[v.second]->idx);
-        }
-      }
+      nearestK->push_back(make_pair(adjNode,dist));
+    }
+    if (j)
+    {
+      sort(nearestK->begin(), nearestK->end(), sortbysec);
+      nearestK->erase(nearestK->begin()+kNN, nearestK->end()); // keep top k values
+    }*/
+}
+
+bool isEdgeValid(double neighborDist, double* currNodeAng, double* adjNodeAng, double *map, int x_size, int y_size)
+{
+  int numofsamples = (int)((neighborDist)/(PI/20));
+  double* newConfig_arr = (double*) malloc(armDOF * sizeof(double));
+  for (int ff=1; ff <= numofsamples; ff++)
+  {
+    for(int kk = 0; kk < armDOF; kk++)
+    {
+      newConfig_arr[kk] = adjNodeAng[kk] + ((double)(ff)*(PI/20))*((currNodeAng[kk] - adjNodeAng[kk])/neighborDist);
+    }
+    if(!IsValidArmConfiguration(newConfig_arr, armDOF, map, x_size, y_size))
+    {
+      //printf("The nearest nodes have an obstacle in between \n");
+      return false;
     }
   }
+  return true;
+}
 
 // checks if the nearest node is on the same cluster, i.e. d is reachable from s
-bool hasPath(Node *s, Node *d)
+bool hasPath(Node *s, Node *d, int V)
 {
   if (s->idx == d->idx)
   {
@@ -384,8 +309,8 @@ bool hasPath(Node *s, Node *d)
   }
 
   // Mark all the vertices as not visited
-  bool *visited = new bool[V+1]; // V+1 because we start at index 1 and last index will for goal node
-  for (int i = 0; i <= V; i++)
+  bool *visited = new bool[V+2]; // V+1 because we start at index 1 and last index will for goal node
+  for (int i = 0; i <= V+1; i++)
   {
     visited[i] = false;
   }
@@ -398,29 +323,28 @@ bool hasPath(Node *s, Node *d)
   //printf("Marked Node %d as visited \n" , s->idx);
   queue.push_back(s);
 
-  // iterator for traversing all the neighbors of the vertex
-  vector<pair<Node*, double>>::iterator it;
-
   while(!queue.empty())
   { // Dequeue a vertex
     s = queue.front();
     queue.pop_front();
 
+    Node* neighbor; 
     // Find all the adjacent vertices and mark them as visited and enqueue them
-    for (it = adjList[s->idx].begin(); it != adjList[s->idx].end(); ++it)
+    for (int i = 0; i< s->adjNodes->size(); i++)
     {
-      if ((it->first->idx) == d->idx) // if this node is the destination return true
+      neighbor  = (*(s->adjNodes))[i];
+      if (neighbor->idx == d->idx) // if this node is the destination return true
       {
-        printf("Path already exists\n");
+       // printf("Path already exists\n");
         delete[] visited;
         return true;
       }
       // BFS
-      if (visited[(it->first->idx)] == false)
+      if (visited[neighbor->idx] == false)
       {
        // printf("Pushing node %d to queue \n", (*it)->idx);
-        visited[it->first->idx] = true;
-        queue.push_back(it->first);
+        visited[neighbor->idx] = true;
+        queue.push_back(neighbor);
       }
     }
   }
@@ -428,76 +352,407 @@ bool hasPath(Node *s, Node *d)
   delete[] visited;
   return false;
 }
-// returns the indices of the closest nodes
-  vector<pair<double,int>> findNeighbors(Node* currNode, int i) // i represents the total number of nodes in the roadmap so far
-  {
-   // printf("Finding neighbors for node at %d \n", currNode->idx);
-    priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> kNearest;
-    vector<pair<double,int>> closestK;
 
-    // traverse the graph and compute distance between nodes
-    for (int j = 0; j < i; j++)
-    {
-      double dist = 0;
-      if (j!= currNode->idx && nodeMap.count(j)) // check if the vertex exists
-      {
-      //  printf("Computing distance between nodes at %d and %d \n", currNode->idx, nodeMap[j]->idx);
-        for (int k = 0; k < armDOF; k++)
-        {
-          dist +=  fabs(currNode->jointAng[k] - nodeMap[j]->jointAng[k]); 
-        }
-        kNearest.push(make_pair(dist,j));
-      }
-    }
-
-    if (kNearest.size()>=kNN)
-    {
-      for (int m=0; m < kNN; m++)
-      {
-        closestK.push_back(kNearest.top()); // push the index and weight of the node
-       // printf("Distance of the node at %d is %.2f \n", kNearest.top().second, kNearest.top().first);
-        kNearest.pop();
-      }
-    }
-
-    else
-    {
-      while (!kNearest.empty())
-      {
-        closestK.push_back(kNearest.top()); // push the index of the node
-       // printf("Distance of the node at %d is %.2f \n", kNearest.top().second, kNearest.top().first);
-        kNearest.pop();
-      }
-    }
-    return closestK;
-  }
-  ~roadMap();
-};
-
-roadMap::~roadMap()
-{
-  delete prmNode;
-}
-
-static void planner(
-		  double*	map,
+static void prmPlanner(double*	map,
 		  int x_size,
  		  int y_size,
       double* armstart_anglesV_rad,
       double* armgoal_anglesV_rad,
-      int numofDOFs,
-      double*** plan,
-      int* planlength)
+      int numofDOFs
+      ,double*** plan,
+      int* planlength
+    )
 {
-  int V = 20;// number of nodes in the roadMap
-  int kNN = 5;// nearest neighbors for the search
-  roadMap prm(map,x_size,y_size,V,kNN);
-  prm.createMap();
+    int V = 30500;
+    double kNNrad = 0.0;
+    int i = 0;
+    double epsilon = PI/4;
 
+    vector<Node*>* graph = new vector<Node*>();
+    double *currConfig;
+    printf("Start Map Creation \n");
+   
+    while (i < V)
+    {
+      i++;
+      vector<Node*>* nearestKNodes = new vector<Node*>();
+      vector<double>* nearestKDist = new vector<double>();
+      currConfig = (double*) malloc(sizeof(double)*armDOF);
+      Node* currNode = (Node*) malloc(sizeof(Node));
+      Node* adjNode;
+      randomConfig(&currConfig);
+      if (!IsValidArmConfiguration(currConfig, armDOF, map, x_size, y_size))
+      {
+        continue;
+      }
+      currNode->jointAng = currConfig;
+      currNode->adjNodes = new vector<Node*>();
+      currNode->idx = i;
+      graph->push_back(currNode);
+      kNNrad =  epsilon;
+      findNeighbors(graph, nearestKNodes, nearestKDist,currConfig, kNNrad);
+      
+      for (int ss=0; ss < nearestKNodes->size(); ss++)
+      {
+        adjNode = (*nearestKNodes)[ss];
+        double neighborDist = (*nearestKDist)[ss];
+        if (!isEdgeValid(neighborDist,currConfig, adjNode->jointAng, map,x_size, y_size))
+        {
+         // printf("Edge not Valid \n");
+          continue;
+        }
+        if (hasPath(currNode,adjNode,V))
+        {
+          continue;
+        }
+        currNode->adjNodes->push_back(adjNode);
+        adjNode->adjNodes->push_back(currNode);
+      }
+      free(nearestKNodes);
+      free(nearestKDist);
+    }
+    printf("While Loop Complete \n");
+    Node* initNode = (Node*) malloc(sizeof(Node));
+    Node* goalNode = (Node*) malloc(sizeof(Node));
+    double* startConfig = (double*) malloc(sizeof(double)*armDOF);
+    double* goalConfig  = (double*) malloc(sizeof(double)*armDOF);
+    for (int ang=0; ang < armDOF; ang++)
+    {
+      startConfig[ang] = armstart_anglesV_rad[ang];
+      goalConfig[ang]  = armgoal_anglesV_rad[ang];
+    }
+    initNode->jointAng = startConfig;
+    goalNode->jointAng = goalConfig;
+    initNode->idx = 0;
+    goalNode->idx = V + 1;
+    initNode->adjNodes = new vector<Node*>();
+    goalNode->adjNodes = new vector<Node*>();
+    graph->push_back(initNode);
+    graph->push_back(goalNode);
+    vector<Node*>* closestNodes = new vector<Node*>();
+    vector<double>* closestDist = new vector<double>();
+    Node* neighborNode;
+    findNeighbors(graph, closestNodes, closestDist,armstart_anglesV_rad, epsilon);
+    for (int ss=0; ss < closestNodes->size(); ss++)
+    {
+      neighborNode = (*closestNodes)[ss];
+      double neighborDist = (*closestDist)[ss];
+      if (!isEdgeValid(neighborDist,armstart_anglesV_rad, neighborNode->jointAng, map,x_size, y_size))
+      {
+       // printf("Edge not Valid \n");
+        continue;
+      }
+      if (hasPath(initNode,neighborNode,V))
+      {
+        //printf("Path already exists to start node \n");
+        continue;
+      }
+      printf("Start Node connected \n");
+      initNode->adjNodes->push_back(neighborNode);
+      neighborNode->adjNodes->push_back(initNode);
+    }
+    vector<Node*>* closestNodesGoal = new vector<Node*>();
+    vector<double>* closestDistGoal = new vector<double>();
+    
+    findNeighbors(graph, closestNodesGoal, closestDistGoal,armgoal_anglesV_rad, epsilon*10);
+    for (int ss=0; ss < closestNodesGoal->size(); ss++)
+    {
+      neighborNode = (*closestNodesGoal)[ss];
+      double neighborDist = (*closestDistGoal)[ss];
+      if (!isEdgeValid(neighborDist,armgoal_anglesV_rad, neighborNode->jointAng, map,x_size, y_size))
+      {
+        //printf("Edge not Valid \n");
+        continue;
+      }
+      if (hasPath(goalNode,neighborNode,V))
+      {
+        //printf("Path already exists to goal node \n");
+        continue;
+      }
+      printf("Goal Node connected \n");
+      goalNode->adjNodes->push_back(neighborNode);
+      neighborNode->adjNodes->push_back(goalNode);
+    }
+
+    if (hasPath(initNode, goalNode,V))
+    {
+      printf("Path created from start to goal node \n");
+    }
+    // Start Search
+    bool* visited  = (bool*) malloc(sizeof(bool)*(V+2));
+    for (int hh=0; hh<=V+1; hh++)
+    {
+      visited[hh] = false;
+    }
+    queue<Node*> q;
+    q.push(initNode);
+    visited[initNode->idx] = true;
+    Node* currNode;
+    Node* adjNode;
+    
+    while (!q.empty())
+    {
+      currNode = q.front();
+      q.pop();
+      //printf("Popped index %d \n", currNode->idx);
+      visited[currNode->idx] = true;
+
+      if (currNode->idx == goalNode->idx)
+      {
+        printf("Goal Found \n");
+        break;
+      }
+      for (int ll=0;ll<currNode->adjNodes->size(); ll++)
+      {
+        adjNode = (*(currNode->adjNodes))[ll];
+        if (visited[adjNode->idx]== false)
+        {
+          visited[adjNode->idx]== true;
+          adjNode->parent = currNode;
+          q.push(adjNode);
+        }
+      }
+    }
+    list<Node*> finalPath;
+    currNode = goalNode;
+    Node* parentNode;
+    parentNode = currNode->parent;
+    //*plan = (double***) malloc((V+1)*sizeof(double*));
+    while(1)
+    {
+      if (currNode->idx > 0)
+      {
+        finalPath.push_front(currNode);
+        currNode = currNode->parent;
+      }
+      else
+      {
+        finalPath.push_front(currNode);
+        printf("Backtrack complete \n");
+        break;
+      }
+      
+    }
+
+    *plan = (double**) malloc((finalPath.size())*sizeof(double*));
+    for (int m = 0; m < finalPath.size(); m++){
+        (*plan)[m] = (double*) malloc(numofDOFs*sizeof(double)); 
+        for(int j = 0; j < numofDOFs; j++){
+            (*plan)[m][j] = (*(finalPath.front())).jointAng[j];
+        }
+        finalPath.pop_front();
+    }    
+    *planlength = finalPath.size();
+
+    for (int kk=0; kk < graph->size();kk++)
+    {
+      free((*graph)[kk]->jointAng);
+      free((*graph)[kk]->adjNodes);
+      free((*graph)[kk]);
+    }
+
+    free(closestDist);
+    free(closestDistGoal);
+  return;
+}
+
+/*
+void findRRTNeighbor(vector<Node*>* graph, Node** nearestNode,
+  double* nearestDist, double* config)
+{
+  double dist = 0;
+  nearestDist = INT_MAX;
+  Node* neighborNode;
+  for (int i = 0; i < graph->size(); i++)
+  {
+    neighborNode = (*graph)[i];
+    for (int i = 0; i < armDOF; i++)
+    {
+      dist += sqrt(pow(fabs(neighborNode->jointAng[i] - config[i]),2));
+    }
+
+    if (dist < nearestDist)
+    {
+      printf("RRT closest node found \n");
+      nearestDist = dist;
+      nearestNode = (*graph)[i];
+    }
+  }
+}
+
+
+static void rrtPlanner(double*	map,
+		  int x_size,
+ 		  int y_size,
+      double* armstart_anglesV_rad,
+      double* armgoal_anglesV_rad,
+      int numofDOFs
+      ,double**** plan,
+      int** planlength
+     )
+{
+    int V = 200;
+    int i = 0;
+    double epsilon = PI/4;
+
+    vector<Node*>* graph = new vector<Node*>();
+    
+    double *currConfig;
+    printf("Start RRT Map Creation \n");
+    Node* initNode = (Node*) malloc(sizeof(Node));
+    Node* goalNode = (Node*) malloc(sizeof(Node));
+    double* startConfig = (double*) malloc(sizeof(double)*armDOF);
+    double* goalConfig  = (double*) malloc(sizeof(double)*armDOF);
+    for (int ang=0; ang < armDOF; ang++)
+    {
+      startConfig[ang] = armstart_anglesV_rad[ang];
+      goalConfig[ang]  = armgoal_anglesV_rad[ang];
+    }
+    initNode->jointAng = startConfig;
+    goalNode->jointAng = goalConfig;
+    initNode->idx = 0;
+    goalNode->idx = V + 1;
+    initNode->adjNodes = new vector<Node*>();
+    goalNode->adjNodes = new vector<Node*>();
+    graph->push_back(initNode);
+    //graph->push_back(goalNode);
+    
+    while (i < V)
+    {
+      i++;
+      currConfig = (double*) malloc(sizeof(double)*armDOF);
+      Node* nearestNode;//  = (Node*) malloc(sizeof(Node));
+      Node* newVertex =  (Node*) malloc(sizeof(Node));
+      newVertex->adjNodes = new vector<Node*>();
+      double nearestDist = 0;
+      double* newConfig = (double*) malloc(sizeof(double)*armDOF);
+      randomConfig(&currConfig);
+      if (!IsValidArmConfiguration(currConfig, armDOF, map, x_size, y_size))
+      {
+        continue;
+      }
+ 
+      //graph->push_back(currNode);
+      // Find nearest node
+      findRRTNeighbor(graph, &nearestNode, &nearestDist,currConfig);
+
+      // Extend the configuration towards q_rand by a distance epsilon
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfig[s] = (currConfig[s] - nearestNode->jointAng[s]);
+      }
+      double newConfigMag = 0;
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfigMag += pow(newConfig[s],2);
+      }
+
+      newConfigMag = sqrt(newConfigMag);
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfig[s] = newConfig[s] / newConfigMag;
+        newVertex->jointAng[s] = nearestNode->jointAng[s] + (newConfig[s] * epsilon) ;
+      }
+      // Check if the new configuration is valid and the edge is collision free
+      if ((!IsValidArmConfiguration(newVertex->jointAng, armDOF, map, x_size, y_size)
+        || (!isEdgeValid(epsilon,nearestNode,newVertex->jointAng , map,x_size, y_size))
+        )
+      {
+        continue;
+      }
+      graph->push_back(newVertex);
+      if (hasPath(nearestNode,newVertex,V))
+      {
+        continue;
+      }
+      nearestNode->adjNodes->push_back(newVertex);
+      newVertex->adjNodes->push_back(nearestNode);
+      // Check if new vertex is q_rand or in the goal region
+      double goalDist = 0;
+      for (int s=0; s<armDOF; s++)
+      {
+        goalDist += pow((armgoal_anglesV_rad[s] - newVertex->jointAng[s]),2)
+      }
+      
+      if (sqrt(goalDist) <= epsilon)
+      {
+        printf("Goal Region Reached \n");
+        break;
+      }
+      
+    }
+
+    // Start Search
+    bool* visited  = (bool*) malloc(sizeof(bool)*(V+2));
+    for (int hh=0; hh<=V+1; hh++)
+    {
+      visited[hh] = false;
+    }
+    queue<Node*> q;
+    q.push(initNode);
+    visited[initNode->idx] = true;
+    Node* currNode;
+    Node* adjNode;
+    
+    while (!q.empty())
+    {
+      currNode = q.front();
+      q.pop();
+      printf("Popped index %d \n", currNode->idx);
+      visited[currNode->idx] = true;
+
+      if (currNode->idx == goalNode->idx)
+      {
+        printf("Goal Found \n");
+        break;
+      }
+      for (int ll=0;ll<currNode->adjNodes->size(); ll++)
+      {
+        adjNode = (*(currNode->adjNodes))[ll];
+        if (visited[adjNode->idx]== false)
+        {
+          visited[adjNode->idx]== true;
+          adjNode->parent = currNode;
+          q.push(adjNode);
+        }
+      }
+    }
+    /*currNode = goalNode;
+    Node* parentNode;
+    parentNode = currNode->parent;
+    //*plan = (double***) malloc((V+1)*sizeof(double*));
+    while(currNode->idx != 0)
+    {
+      if (currNode->idx > 0)
+      {
+        currNode = currNode->parent;
+      }
+    }
+   
+   // *planlength = u;
+
+    for (int kk=0; kk < graph->size();kk++)
+    {
+      free((*graph)[kk]->jointAng);
+      free((*graph)[kk]->adjNodes);
+      free((*graph)[kk]);
+    }
+  
+  return;
+}*/
+static void planner(
+		   double*	map,
+		   int x_size,
+ 		   int y_size,
+           double* armstart_anglesV_rad,
+           double* armgoal_anglesV_rad,
+	   int numofDOFs,
+	   double*** plan,
+	   int* planlength)
+{
 	//no plan by default
 	*plan = NULL;
 	*planlength = 0;
-    
     //for now just do straight interpolation between start and goal checking for the validity of samples
 
     double distance = 0;
@@ -528,7 +783,6 @@ static void planner(
     
     return;
 }
-
 
 //prhs contains input parameters (3): 
 //1st is matrix with all the obstacles
@@ -588,10 +842,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
     //}
     
     //dummy planner which only computes interpolated path
-    planner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength); 
+    //planner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength); 
     
     printf("planner returned plan of length=%d\n", planlength); 
-    
+    prmPlanner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad,numofDOFs, &plan,&planlength);
     /* Create return values */
     if(planlength > 0)
     {
@@ -622,7 +876,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
     int* planlength_out = (int*) mxGetPr(PLANLENGTH_OUT);
     *planlength_out = planlength;
 
-    
     return;
     
 }
