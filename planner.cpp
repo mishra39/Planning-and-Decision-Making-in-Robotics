@@ -229,7 +229,14 @@ struct Node
     double cost;
     double h_val;
 };
-
+struct greaterF
+  {
+    int operator() (const Node* cl, const Node* cr) const // cl: left cr: right
+    {
+        // this acts as greater in pq so we create a min-heap
+        return (cl->f_val) > (cr->f_val);
+    }
+  };
 // Generate random arm configuration
 void randomConfig(double** config_arr)
 {
@@ -358,6 +365,16 @@ bool hasPath(Node *s, Node *d, int V)
   return false;
 }
 
+double heuristicCalc(double* nodeConfig, double* goalConfig) // computes the distance between two configurations
+{
+  double heuristic = 0;
+  for (int s=0; s<armDOF; s++)
+  {
+    heuristic += pow((nodeConfig[s] - goalConfig[s]),2);
+  }
+  heuristic  = sqrt(heuristic);
+  return heuristic;
+}
 static void prmPlanner(double*	map,
 		  int x_size,
  		  int y_size,
@@ -495,6 +512,102 @@ static void prmPlanner(double*	map,
       printf("Path created from start to goal node \n");
     }
     // Start Search
+    priority_queue<Node*, vector<Node*>, greaterF> open_pq;
+    unordered_map<int, bool> visited;
+    unordered_map<int, bool> closed;
+    Node* currNode, *adjNode, *parentNode;
+    list<Node*>finalPath; // indices of shortest path
+    double searchWt = 5;
+    // initialize and push start node to open list
+    initNode->g_val = 0;
+    initNode->cost = 0;
+    initNode->parent= NULL;
+    initNode->h_val = heuristicCalc(initNode->jointAng, armgoal_anglesV_rad);
+    visited[0] = true;
+    open_pq.push(initNode);
+    
+    // Expand graph
+    while(!open_pq.empty())
+    {
+      currNode = open_pq.top();
+      open_pq.pop();
+      if (closed[currNode->idx])
+      {
+        continue;
+      }
+      closed[currNode->idx] = true;
+
+      // if currNode is goal then break
+      if (currNode == goalNode)
+      {
+        printf("Goal found \n");
+        break;
+      }
+
+      for (int h=0; h < currNode->adjNodes->size(); h++)
+      {
+        // if the node has been expanded
+          if (closed[(*(currNode->adjNodes))[h]->idx])
+          {
+            continue;
+          }
+
+          // check for g value update
+          if (visited[(*(currNode->adjNodes))[h]->idx])
+          {
+            adjNode = (*(currNode->adjNodes))[h];
+            if (adjNode->g_val > currNode->g_val + adjNode->cost)
+            {
+              adjNode->g_val = currNode->g_val + adjNode->cost;
+              adjNode->f_val = adjNode->g_val + searchWt*adjNode->h_val;
+              adjNode->parent = currNode;
+              open_pq.push(adjNode);
+            }
+          }
+
+          else 
+          {
+            adjNode = (*(currNode->adjNodes))[h];
+            adjNode->cost = (*(currNode->adjNodesDist))[h];
+            adjNode->g_val = currNode->g_val + adjNode->cost;
+            adjNode->h_val = heuristicCalc(adjNode->jointAng,armgoal_anglesV_rad);
+            adjNode->f_val = adjNode->g_val + searchWt*adjNode->h_val;
+            adjNode->parent = currNode;
+            visited[adjNode->idx] = true;
+            open_pq.push(adjNode);
+          }
+      }
+    }
+    parentNode = currNode->parent;
+    while(1)
+    {
+      if (currNode->idx > 0)
+      {
+        finalPath.push_front(currNode);
+        currNode = currNode->parent;
+      }
+      else
+      {
+        finalPath.push_front(currNode);
+        printf("Backtrack complete \n");
+        break;
+      }
+    }
+    printf("Size of final path before popping  %d \n", finalPath.size());
+    *planlength = finalPath.size();
+    *plan = (double**) malloc((*planlength)*sizeof(double*));
+    for (int m = 0; m < *planlength; m++){
+        (*plan)[m] = (double*) malloc(numofDOFs*sizeof(double)); 
+        for(int j = 0; j < numofDOFs; j++){
+            (*plan)[m][j] = (*(finalPath.front())).jointAng[j];
+        }
+        finalPath.pop_front();
+    }    
+    if (finalPath.empty())
+    {
+      printf("All nodes removed from final path list \n");
+    }
+/*
     bool* visited  = (bool*) malloc(sizeof(bool)*(V+2));
     for (int hh=0; hh<=V+1; hh++)
     {
@@ -560,7 +673,7 @@ static void prmPlanner(double*	map,
         finalPath.pop_front();
     }    
     *planlength = finalPath.size();
-
+*/
     for (int kk=0; kk < graph->size();kk++)
     {
       free((*graph)[kk]->jointAng);
@@ -574,7 +687,7 @@ static void prmPlanner(double*	map,
   return;
 }
 
-/*
+
 void findRRTNeighbor(vector<Node*>* graph, Node** nearestNode,
   double* nearestDist, double* config)
 {
@@ -609,7 +722,7 @@ static void rrtPlanner(double*	map,
       int** planlength
      )
 {
-    int V = 200;
+    int V = 12000;
     int i = 0;
     double epsilon = PI/4;
 
@@ -631,13 +744,14 @@ static void rrtPlanner(double*	map,
     initNode->idx = 0;
     goalNode->idx = V + 1;
     initNode->adjNodes = new vector<Node*>();
+    initNode->adjNodesDist = new vector<double>();
     goalNode->adjNodes = new vector<Node*>();
+    goalNode->adjNodesDist = new vector<double>();
     graph->push_back(initNode);
     //graph->push_back(goalNode);
     
     while (i < V)
     {
-      i++;
       currConfig = (double*) malloc(sizeof(double)*armDOF);
       Node* nearestNode;//  = (Node*) malloc(sizeof(Node));
       Node* newVertex =  (Node*) malloc(sizeof(Node));
@@ -754,10 +868,10 @@ static void rrtPlanner(double*	map,
       free((*graph)[kk]->jointAng);
       free((*graph)[kk]->adjNodes);
       free((*graph)[kk]);
-    }
+    }*/
   
   return;
-}*/
+}
 static void planner(
 		   double*	map,
 		   int x_size,
@@ -863,7 +977,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
     //planner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength); 
     
     printf("planner returned plan of length=%d\n", planlength); 
-    prmPlanner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad,numofDOFs, &plan,&planlength);
+    if (planner_id == PRM)
+    {
+      printf("Running PRM Planner \n");
+      prmPlanner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad,numofDOFs, &plan,&planlength);
+    }
     /* Create return values */
     if(planlength > 0)
     {
