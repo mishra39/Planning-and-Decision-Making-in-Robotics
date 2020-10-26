@@ -326,7 +326,7 @@ bool hasPath(Node *s, Node *d, int V)
   {
     visited[i] = false;
   }
-  printf("function hasPath: Mared all visited as false\n");
+  printf("function hasPath: Marked all visited as false\n");
 
   // Create a queue for BFS
   list<Node*> queue;
