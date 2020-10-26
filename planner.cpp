@@ -319,21 +319,22 @@ bool hasPath(Node *s, Node *d, int V)
   {
     return true;
   }
-
+  printf("function hasPath: Indices do not match.\n");
   // Mark all the vertices as not visited
   bool *visited = new bool[V+2]; // V+1 because we start at index 1 and last index will for goal node
   for (int i = 0; i <= V+1; i++)
   {
     visited[i] = false;
   }
+  printf("function hasPath: Mared all visited as false\n");
 
   // Create a queue for BFS
   list<Node*> queue;
 
   // Mark the current node as visited and add it to the queue
   visited[s->idx] = true;
-  //printf("Marked Node %d as visited \n" , s->idx);
   queue.push_back(s);
+  printf("function hasPath: Marked Node %d as visited. Starting while loop \n" , s->idx);
 
   while(!queue.empty())
   { // Dequeue a vertex
@@ -347,14 +348,13 @@ bool hasPath(Node *s, Node *d, int V)
       neighbor  = (*(s->adjNodes))[i];
       if (neighbor->idx == d->idx) // if this node is the destination return true
       {
-       // printf("Path already exists\n");
+       printf("function hasPath: Path already exists\n");
         delete[] visited;
         return true;
       }
       // BFS
       if (visited[neighbor->idx] == false)
       {
-       // printf("Pushing node %d to queue \n", (*it)->idx);
         visited[neighbor->idx] = true;
         queue.push_back(neighbor);
       }
@@ -607,73 +607,7 @@ static void prmPlanner(double*	map,
     {
       printf("All nodes removed from final path list \n");
     }
-/*
-    bool* visited  = (bool*) malloc(sizeof(bool)*(V+2));
-    for (int hh=0; hh<=V+1; hh++)
-    {
-      visited[hh] = false;
-    }
-    queue<Node*> q;
-    q.push(initNode);
-    visited[initNode->idx] = true;
-    Node* currNode;
-    Node* adjNode;
-    
-    while (!q.empty())
-    {
-      currNode = q.front();
-      q.pop();
-      //printf("Popped index %d \n", currNode->idx);
-      visited[currNode->idx] = true;
 
-      if (currNode->idx == goalNode->idx)
-      {
-        printf("Goal Found \n");
-        break;
-      }
-      for (int ll=0;ll<currNode->adjNodes->size(); ll++)
-      {
-        double dist = (*(currNode->adjNodesDist))[ll];
-        adjNode = (*(currNode->adjNodes))[ll];
-        if (visited[adjNode->idx]== false)
-        {
-          visited[adjNode->idx]== true;
-          adjNode->parent = currNode;
-          q.push(adjNode);
-        }
-      }
-    }
-    list<Node*> finalPath;
-    currNode = goalNode;
-    Node* parentNode;
-    parentNode = currNode->parent;
-    //*plan = (double***) malloc((V+1)*sizeof(double*));
-    while(1)
-    {
-      if (currNode->idx > 0)
-      {
-        finalPath.push_front(currNode);
-        currNode = currNode->parent;
-      }
-      else
-      {
-        finalPath.push_front(currNode);
-        printf("Backtrack complete \n");
-        break;
-      }
-      
-    }
-
-    *plan = (double**) malloc((finalPath.size())*sizeof(double*));
-    for (int m = 0; m < finalPath.size(); m++){
-        (*plan)[m] = (double*) malloc(numofDOFs*sizeof(double)); 
-        for(int j = 0; j < numofDOFs; j++){
-            (*plan)[m][j] = (*(finalPath.front())).jointAng[j];
-        }
-        finalPath.pop_front();
-    }    
-    *planlength = finalPath.size();
-*/
     for (int kk=0; kk < graph->size();kk++)
     {
       free((*graph)[kk]->jointAng);
@@ -747,7 +681,6 @@ static void rrtPlanner(double*	map,
     initNode->adjNodes = new vector<Node*>();
     initNode->adjNodesDist = new vector<double>();
     graph->push_back(initNode);
-    //graph->push_back(goalNode);
     
     while (i < V)
     {
@@ -943,6 +876,184 @@ static void rrtPlanner(double*	map,
   
   return;
 }
+
+static void rrtConnectPlanner(double*	map,
+		  int x_size,
+ 		  int y_size,
+      double* armstart_anglesV_rad,
+      double* armgoal_anglesV_rad,
+      int numofDOFs
+      ,double*** plan,
+      int* planlength
+     )
+{
+    int V = 10000;
+    int startGraphIdx = 0; // counter for node indices in the start tree
+    int goalGraphIdx = 0; // counter for node indices in the goal tree
+    double epsilon = PI/4;
+    int startOrGoal = 0; // 0 to start 
+    vector<Node*>* graphStart = new vector<Node*>();
+    vector<Node*>* graphGoal = new vector<Node*>();
+    
+    double *randConfig;
+    double *prevConfig;
+    printf("Start RRT Connect Map Creation \n");
+    Node* initNode = (Node*) malloc(sizeof(Node));
+    Node* goalNode = (Node*) malloc(sizeof(Node));
+    double* startConfig = (double*) malloc(sizeof(double)*armDOF);
+    double* goalConfig  = (double*) malloc(sizeof(double)*armDOF);
+
+    for (int ang=0; ang < armDOF; ang++)
+    {
+      startConfig[ang] = armstart_anglesV_rad[ang];
+      goalConfig[ang]  = armgoal_anglesV_rad[ang];
+    }
+
+    initNode->jointAng = startConfig;
+    initNode->idx = 0;
+    initNode->adjNodes = new vector<Node*>();
+    initNode->adjNodesDist = new vector<double>();
+
+    goalNode->jointAng = goalConfig;
+    goalNode->idx = V+1; // Change after graph creation
+    goalNode->adjNodes = new vector<Node*>();
+    goalNode->adjNodesDist = new vector<double>();
+    graphStart->push_back(initNode);
+    graphGoal->push_back(goalNode);
+
+    while(1)
+    {
+      randConfig = (double*) malloc(sizeof(double)*armDOF);
+      Node* nearestNode;//  = (Node*) malloc(sizeof(Node));
+      Node* newVertex =  (Node*) malloc(sizeof(Node));
+      newVertex->adjNodes = new vector<Node*>();
+      newVertex->adjNodesDist = new vector<double>();
+      double nearestDist = 0;
+      double* newConfig = (double*) malloc(sizeof(double)*armDOF);
+      double* newNearesConfig = (double*) malloc(sizeof(double)*armDOF);
+      randomConfig(&randConfig);
+      printf("Checking IsValidArmConfiguration for random config\n");
+      if (!IsValidArmConfiguration(randConfig, armDOF, map, x_size, y_size))
+      {
+        continue;
+      }
+      prevConfig = NULL;
+      
+      printf("Checking for neighbors\n");
+      // Find nearest node
+      if (startOrGoal == 0)
+      {
+        nearestNode = findRRTNeighbor(graphStart, nearestDist,randConfig);
+      }
+
+      else 
+      {
+        nearestNode = findRRTNeighbor(graphGoal, nearestDist,randConfig);
+      }
+      printf("Neighbor search complete\n");
+
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfig[s] = (randConfig[s] - nearestNode->jointAng[s]);
+      }
+
+      printf("Assigned newconfig before loop \n");
+      double newConfigMag = 0;
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfigMag += pow(newConfig[s],2);
+      }
+
+      printf("newconfig computed before loop\n");
+      newConfigMag = sqrt(newConfigMag);
+      for (int s = 0; s < armDOF; s++)
+      {
+        newConfig[s] = nearestNode->jointAng[s] + ((newConfig[s] / newConfigMag) * epsilon) ;
+      }
+      // Extend until obstacle or node towards q_rand
+      while (1)
+      {
+        printf("Checking for valid config in 2nd while loop\n");
+        if ((!IsValidArmConfiguration(newConfig, armDOF, map, x_size, y_size)))
+        //|| (!isEdgeValid(epsilon,nearestNode->jointAng,newVertex->jointAng , map,x_size, y_size))  
+        {
+          if (prevConfig != NULL )
+          {
+            printf("Using prevconfig because current config is invalid in 2nd while loop\n");
+            newConfig = prevConfig;
+          }
+
+          else
+          {
+            printf("Assigning NULL to newconfig 2nd while loop\n");
+            newConfig = NULL;
+          }
+          break;
+        }
+
+        else if (newConfig == randConfig) // point is q_rand
+        {
+          printf("newconfig matches the random config in 2nd while loop\n");
+          break;
+        }
+        
+        // When extending do you have to add intermediate points to the graphs????? 
+        prevConfig = newConfig;
+        // move by epsilon distance  again
+        for (int s = 0; s < armDOF; s++)
+        {
+          newConfig[s] = (randConfig[s] - newConfig[s]);
+        }
+        newConfigMag = 0;
+        for (int s = 0; s < armDOF; s++)
+        {
+          newConfigMag += pow(newConfig[s],2);
+        }
+
+        newConfigMag = sqrt(newConfigMag);
+        for (int s = 0; s < armDOF; s++)
+        {
+          newConfig[s] = newConfig[s] + ((newConfig[s] / newConfigMag) * epsilon);
+        }
+        printf("moved by epsilon again \n");
+      }
+      // Add the newConfig to the graph from start
+      if (newConfig != NULL)
+      {
+        if (startOrGoal==0)
+        {
+          printf("Adding to the tree from start \n");
+          startGraphIdx++;
+          newVertex->idx = startGraphIdx;
+          newVertex->jointAng = newConfig;
+          graphStart->push_back(newVertex);
+        }
+        else
+        {
+          printf("Adding to the tree from goal \n");
+          goalGraphIdx++;
+          newVertex->idx = goalGraphIdx;
+          newVertex->jointAng = newConfig;
+          graphGoal->push_back(newVertex);
+        }
+        printf("checking if path already exists \n");
+        if (!hasPath(nearestNode,newVertex,V))
+        {
+          newVertex->adjNodes->push_back(nearestNode);
+          newVertex->adjNodesDist->push_back(newConfigMag);
+          nearestNode->adjNodes->push_back(newVertex);
+          nearestNode->adjNodesDist->push_back(newConfigMag);
+        }
+      }
+      startOrGoal = (startOrGoal==0) ? 1 : 0; // swap the trees
+      printf("Checking if start and goal have been connected \n");
+      // check if a path exists from start node to goal node
+      if (hasPath(initNode, goalNode, graphStart->size() + graphGoal->size() + 2))
+      {
+        break;
+      }
+   }
+}
 static void planner(
 		   double*	map,
 		   int x_size,
@@ -1058,6 +1169,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
     {
       printf("Running RRT Planner \n");
       rrtPlanner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad,numofDOFs, &plan,&planlength);
+    }
+
+    if (planner_id == RRTCONNECT)
+    {
+      rrtConnectPlanner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad,numofDOFs, &plan,&planlength);
     }
     /* Create return values */
     if(planlength > 0)
