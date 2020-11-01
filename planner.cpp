@@ -441,7 +441,17 @@ static void prmPlanner(double*	map,
       ,double*** plan,
       int* planlength
     )
-{
+{   
+    if (!IsValidArmConfiguration(armstart_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Start Position \n");
+      return;
+    }
+    if (!IsValidArmConfiguration(armgoal_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Goal Position \n");
+      return;
+    }
     int V = 10000;
     double kNNrad = 0.0;
     int i = 0;
@@ -449,7 +459,7 @@ static void prmPlanner(double*	map,
 
     vector<Node*>* graph = new vector<Node*>();
     double *currConfig;
-    printf("Start Map Creation \n");
+    //printf("Start Map Creation \n");
    
     while (i < V)
     {
@@ -469,7 +479,7 @@ static void prmPlanner(double*	map,
       currNode->adjNodesDist = new vector<double>();
       currNode->idx = i;
       graph->push_back(currNode);
-      printf("Iteration %d of %d \n", i, V);
+      //printf("Iteration %d of %d \n", i, V);
       kNNrad =  epsilon;
       findNeighbors(graph, nearestKNodes, nearestKDist,currConfig, kNNrad);
       
@@ -494,7 +504,6 @@ static void prmPlanner(double*	map,
       free(nearestKNodes);
       free(nearestKDist);
     }
-    printf("While Loop Complete \n");
     Node* initNode = (Node*) malloc(sizeof(Node));
     Node* goalNode = (Node*) malloc(sizeof(Node));
     double* startConfig = (double*) malloc(sizeof(double)*armDOF);
@@ -568,6 +577,7 @@ static void prmPlanner(double*	map,
     {
       printf("Path created from start to goal node \n");
     }
+    printf("Size of the graph created for PRM Planner: %d\n", graph->size());
     // Start Search
     priority_queue<Node*, vector<Node*>, greaterF> open_pq;
     unordered_map<int, bool> visited;
@@ -646,11 +656,11 @@ static void prmPlanner(double*	map,
       else
       {
         finalPath.push_front(currNode);
-        printf("Backtrack complete \n");
+        //printf("Backtrack complete \n");
         break;
       }
     }
-    printf("Size of final path before popping  %d \n", finalPath.size());
+    //printf("Size of final path before popping  %d \n", finalPath.size());
     *planlength = finalPath.size();
     *plan = (double**) malloc((*planlength)*sizeof(double*));
     for (int m = 0; m < *planlength; m++){
@@ -702,7 +712,7 @@ Node* findRRTNeighbor(vector<Node*>* graph,
       nearestNode = (*graph)[i];
     }
   }
-  printf("Distance of the NN is : %.2f \n", nearestDist);
+  //printf("Distance of the NN is : %.2f \n", nearestDist);
 
   return nearestNode;
 }
@@ -751,18 +761,28 @@ static void rrtPlanner(double*	map,
       int* planlength
      )
 {
-    int V = 17000;
+    int V = 25000;
     int i = 0;
     double epsilon = PI/4;
 
     vector<Node*>* graph = new vector<Node*>();
-    
+    if (!IsValidArmConfiguration(armstart_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Start Position \n");
+      return;
+    }
+    if (!IsValidArmConfiguration(armgoal_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Goal Position \n");
+      return;
+    }
     double *currConfig;
     printf("Start RRT Map Creation \n");
     Node* initNode = (Node*) malloc(sizeof(Node));
     Node* goalNode;// = (Node*) malloc(sizeof(Node));
     double* startConfig = (double*) malloc(sizeof(double)*armDOF);
     double* goalConfig  = (double*) malloc(sizeof(double)*armDOF);
+    double* lastGoodConfig;
     for (int ang=0; ang < armDOF; ang++)
     {
       startConfig[ang] = armstart_anglesV_rad[ang];
@@ -778,10 +798,10 @@ static void rrtPlanner(double*	map,
     {
       //printf("new attempt \n");
       currConfig = (double*) malloc(sizeof(double)*armDOF);
-      if (i>100 && (i%10 ==0))
+      if (i>100 && (i%100 ==0))
       {
-        printf("************************Creating Bias Goal for iteration %d ************************\n", i);
-        goalbiasConfig(armgoal_anglesV_rad, epsilon, &currConfig);
+        //printf("************************Creating Bias Goal for iteration %d ************************\n", i);
+        goalbiasConfig(armgoal_anglesV_rad, epsilon/4, &currConfig);
       }
       else 
       {
@@ -803,38 +823,30 @@ static void rrtPlanner(double*	map,
       nearestNode = findRRTNeighbor(graph, nearestDist,currConfig);
       //printf("Neighbor search complete \n");
       // Extend the configuration towards q_rand by a distance epsilon
-      for (int s = 0; s < armDOF; s++)
-      {
-        newConfig[s] = (currConfig[s] - nearestNode->jointAng[s]);
-      }
-      //printf("Assigned newconfig \n");
-      double newConfigMag = 0;
-      for (int s = 0; s < armDOF; s++)
-      {
-        newConfigMag += pow(newConfig[s],2);
-      }
-
-      //printf("newconfig computed \n");
-      newConfigMag = sqrt(newConfigMag);
       if (nearestDist > epsilon)
       {
         for (int s = 0; s < armDOF; s++)
         {
-          newConfig[s] = nearestNode->jointAng[s] + ((newConfig[s] / newConfigMag) * epsilon) ;
+          steer(nearestNode->jointAng, currConfig, newConfig, nearestDist, epsilon);// newConfig[s] = nearestNode->jointAng[s] + ((newConfig[s] / newConfigMag) * epsilon) ;
         }
         printf("Moved node by distance %.2f \n", distanceCalc(newConfig, nearestNode->jointAng));
       }
-      
-      else
-      {
-        for (int s = 0; s < armDOF; s++)
-        {
-          newConfig[s] = currConfig[s];
-        }
-      }
 
       double newDist = distanceCalc(newConfig,nearestNode->jointAng);
-      if (!isEdgeValid(newDist,nearestNode->jointAng,newConfig , map,x_size, y_size))
+      lastGoodConfig = NULL;
+      if (!isEdgeValidRRT(newDist,nearestNode->jointAng,newConfig,lastGoodConfig, map,x_size, y_size))
+      {
+        if (lastGoodConfig == NULL)
+        {
+          //printf("NULL returned from edge validation \n");
+          continue;
+        }
+        for (int k = 0; k < armDOF; k++)
+        {
+          newConfig[k] = lastGoodConfig[k];
+        }
+      }
+      if (!IsValidArmConfiguration(newConfig, armDOF, map,x_size,y_size))
       {
         continue;
       }
@@ -850,7 +862,7 @@ static void rrtPlanner(double*	map,
       nearestNode->adjNodesDist->push_back(newDist);
       newVertex->adjNodes->push_back(nearestNode);
       newVertex->adjNodesDist->push_back(newDist);
-      printf("Pushed adjacent nodes\n");
+      //printf("Pushed adjacent nodes\n");
       // Check if new vertex is q_rand or in the goal region
       double goalDist = 0;
       for (int s=0; s<armDOF; s++)
@@ -858,24 +870,25 @@ static void rrtPlanner(double*	map,
         goalDist += pow(armgoal_anglesV_rad[s] - newVertex->jointAng[s],2);
       }
       
-      if (sqrt(goalDist) <= epsilon/3)
+      if (sqrt(goalDist) <= epsilon/2)
       {
         printf("Goal Region Reached \n");
         goalNode = newVertex;
         break;
       }
-      /*else if (i == V)
+      else if (i >= V-5)
       {
-        goalNode = newVertex;
+        double goalNearestDist = 0;
+        goalNode = findRRTNeighbor(graph, goalNearestDist,armgoal_anglesV_rad);;
         printf("Max iterations reached \n");
-      }*/
+        break;
+      }
     }
-    if (hasPath(initNode, goalNode,V))
+    /*if (hasPath(initNode, goalNode,V))
     {
       printf("Path created from start to goal node \n");
-    }
+    }*/
 
-    double goalNearestDist = 0;
     Node* closestToGoal = goalNode;//findRRTNeighbor(graph, goalNearestDist,armgoal_anglesV_rad);
     // BackTrack
     list<Node*>finalPath;
@@ -892,7 +905,7 @@ static void rrtPlanner(double*	map,
       //printf("Parent Successfully  found\n");
     }
 
-    printf("Size of path is %d  and index of final node %d\n ", finalPath.size(), closestToGoal->idx);
+    printf("Size of path is %d  and size of graph %d\n ", finalPath.size(), graph->size());
     *planlength = finalPath.size();
     *plan = (double**) malloc((*planlength)*sizeof(double*));
     for (int m = 0; m < *planlength; m++){
@@ -915,99 +928,6 @@ static void rrtPlanner(double*	map,
     }
   
   return;
-}
-
-void extend2(vector<Node*>* graph, double* targetConfig, Node** nearestNode, Node** newVertex, 
-              double epsilon, int &GraphIdx, double *newConfigDist,
-              double *map, int x_size, int y_size          
-            )
-{
-  double* newConfig = (double*) malloc(sizeof(double)*armDOF);
-  double *prevConfig;
-  
-  prevConfig = NULL;
-  for (int s = 0; s < armDOF; s++)
-  {
-    newConfig[s] = (targetConfig[s] - (*nearestNode)->jointAng[s]);
-  }
-
-  printf("Assigned newconfig before loop \n");
-  double newConfigMag = 0;
-  for (int s = 0; s < armDOF; s++)
-  {
-    newConfigMag += pow(newConfig[s],2);
-  }
-
-  printf("newconfig computed before loop\n");
-  newConfigMag = sqrt(newConfigMag);
-
-  for (int s = 0; s < armDOF; s++)
-  {
-    newConfig[s] = (*nearestNode)->jointAng[s] + ((newConfig[s] / newConfigMag) * epsilon) ;
-  }
-  // Extend until obstacle or node towards q_rand
-  while (1)
-  {
-    printf("Checking for valid config in 2nd while loop\n");
-    if ((!IsValidArmConfiguration(newConfig, armDOF, map, x_size, y_size)))
-    //|| (!isEdgeValid(epsilon,nearestNode->jointAng,newVertex->jointAng , map,x_size, y_size))  
-    {
-      if (prevConfig != NULL )
-      {
-        //printf("Using prevconfig because current config is invalid in 2nd while loop\n");
-        newConfig = prevConfig;
-      }
-
-      else
-      {
-        //printf("Assigning NULL to newconfig 2nd while loop\n");
-        newConfig = NULL;
-      }
-      break;
-    }
-    else if ((newConfig == targetConfig) || (distanceCalc(newConfig,targetConfig) < epsilon/2)) // point is q_rand
-    {
-      //printf("newconfig matches the random config in 2nd while loop\n");
-      break;
-    }
-    
-    // When extending do you have to add intermediate points to the graphs????? 
-    prevConfig = newConfig;
-
-    // move by epsilon distance  again
-    for (int s = 0; s < armDOF; s++)
-    {
-      newConfig[s] = (targetConfig[s] - newConfig[s]);
-    }
-    newConfigMag = 0;
-    for (int s = 0; s < armDOF; s++)
-    {
-      newConfigMag += pow(newConfig[s],2);
-    }
-
-    newConfigMag = sqrt(newConfigMag);
-    for (int s = 0; s < armDOF; s++)
-    {
-      newConfig[s] = newConfig[s] + ((newConfig[s] / newConfigMag) * epsilon);
-    }
-    printf("moved by epsilon again \n");
-  }
-   // Add the newConfig to the graph from start
-  if (newConfig != NULL)
-  {
-    printf("Adding to the tree \n");
-    GraphIdx++;
-    //(*newVertex)->idx = GraphIdx;
-    (*newVertex)->jointAng = newConfig;
-    *newConfigDist = newConfigMag;
-    graph->push_back((*newVertex));
-    printf("Size of graph increased to %d \n", graph->size());
-  }
-  else
-  {
-    //printf("newConfig is NULL \n");
-    (*newVertex) = NULL;
-  }
 }
 
 // Generate random index for nodes
@@ -1064,6 +984,16 @@ static void rrtConnectPlanner(double*	map,
       int* planlength
      )
 {
+    if (!IsValidArmConfiguration(armstart_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Start Position \n");
+      return;
+    }
+    if (!IsValidArmConfiguration(armgoal_anglesV_rad, armDOF, map,x_size,y_size))
+    {
+      printf("Invalid Goal Position \n");
+      return;
+    }
     *plan = NULL;
     *planlength = 0;
     int V = 25000;
@@ -1117,7 +1047,7 @@ static void rrtConnectPlanner(double*	map,
     while(i<V)
     {
       randConfig = (double*) malloc(sizeof(double)*armDOF);
-      if (i>100 && (i%10 ==0))
+      if (i>100 && (i%20 ==0))
       {
         printf("************************Creating Bias Goal for iteration %d ************************\n", i);
         goalbiasConfig(armgoal_anglesV_rad, epsilon, &randConfig);
@@ -1127,7 +1057,6 @@ static void rrtConnectPlanner(double*	map,
         randomConfig(&randConfig);
       }
       
-      //printf("Checking IsValidArmConfiguration for random config\n");
       if (!IsValidArmConfiguration(randConfig, armDOF, map, x_size, y_size))
       {
         continue;
@@ -1149,6 +1078,7 @@ static void rrtConnectPlanner(double*	map,
         if (lastGoodConfig == NULL)
         {
           printf("NULL returned from edge validation \n");
+          i++;
           continue;
         }
         for (int k = 0; k < armDOF; k++)
@@ -1157,11 +1087,14 @@ static void rrtConnectPlanner(double*	map,
         }
       }
       newConfigDist = distanceCalc(nearestNode->jointAng, newConfigA); // update the distance if needed
+      if (!IsValidArmConfiguration(newConfigA, armDOF, map,x_size,y_size))
+      {
+        continue;
+      }
       printf("Distance between newConfig A and its nearest Node is: %.2f \n", newConfigDist);
       currNode = (Node*) malloc(sizeof(Node));
       currNode->adjNodes = new vector<Node*>();
       currNode->adjNodesDist = new vector<double>();
-
       currNode->jointAng = newConfigA;
       printf("assigned newConfigA to currNode \n");
       int tempIdx = 0;
@@ -1360,6 +1293,16 @@ static void rrtStarPlanner(
   //no plan by default
 	*plan = NULL;
 	*planlength = 0;
+  if (!IsValidArmConfiguration(armstart_anglesV_rad, armDOF, map,x_size,y_size))
+  {
+    printf("Invalid Start Position \n");
+    return;
+  }
+  if (!IsValidArmConfiguration(armgoal_anglesV_rad, armDOF, map,x_size,y_size))
+  {
+    printf("Invalid Goal Position \n");
+    return;
+  }
   int V = 25000;
   int i = 0;
   double epsilon = PI/4;
@@ -1385,9 +1328,9 @@ static void rrtStarPlanner(
   while (graph->size() < V)
   {
     randConfig = (double*) malloc(sizeof(double)*armDOF);
-    if (i>100 && (i%100 ==0))
+    if (i>100 && (i%20 ==0))
     {
-      printf("************************Creating Bias Goal for iteration %d ************************\n", i);
+      //printf("************************Creating Bias Goal for iteration %d ************************\n", i);
       goalbiasConfig(armgoal_anglesV_rad, epsilon/2, &randConfig);
     }
     else 
@@ -1403,7 +1346,7 @@ static void rrtStarPlanner(
     Node* nearestNode;
     double nearestDist = 0;
     nearestNode = findRRTNeighbor(graph,nearestDist, randConfig);
-    printf("Nearest dist after neighbor search %.2f\n",nearestDist);
+    //printf("Nearest dist after neighbor search %.2f\n",nearestDist);
     // Steer function
     double* newConfig = (double*) malloc(sizeof(double)*armDOF);
     steer(nearestNode->jointAng, randConfig, newConfig, nearestDist, epsilon);
@@ -1418,7 +1361,7 @@ static void rrtStarPlanner(
     }
 
     // Sample nodes in the specified region
-    double gamma = 10;
+    double gamma = 2.0;
     int rad = min((gamma/armDOF)*(log(graph->size())/ graph->size()), epsilon);
     vector<Node*>* closestNodes = new vector<Node*>();
     vector<double>* closestDist = new vector<double>();
@@ -1470,7 +1413,7 @@ static void rrtStarPlanner(
       }
     }
 
-    if (distanceCalc(newConfig, armgoal_anglesV_rad) < rad/2)
+    if (distanceCalc(newConfig, armgoal_anglesV_rad) < epsilon/4)
     {
       printf("Goal Found \n");
       break;
@@ -1479,6 +1422,7 @@ static void rrtStarPlanner(
   // If the goal is not sampled, find the path from closest to goal point
   double goalNearestDist = 0;
   Node* closestToGoal = findRRTNeighbor(graph, goalNearestDist,armgoal_anglesV_rad);
+  printf("Size of final graph %d\n", graph->size());
   // BackTrack
   list<Node*>finalPath;
   while(closestToGoal->parent != NULL)
