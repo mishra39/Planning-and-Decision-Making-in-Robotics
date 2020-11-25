@@ -1,0 +1,751 @@
+startQ =
+
+    1.0496 1.4529 1.4751 1.5020 1.0914
+
+
+goalQ =
+
+    2.5119 1.6328 5.0270 2.7107 5.7218
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  122 
+All nodes removed from final path list 
+Planner execution time was 2.52 seconds 
+plan of length 122 was found
+
+startQ =
+
+    1.1853 1.1234 1.1184 1.5024 1.3507
+
+
+goalQ =
+
+    3.4549 0.9108 5.3598 3.9085 2.2051
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.36 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.2576 1.0870 1.1728 1.1118 1.1435
+
+
+goalQ =
+
+    1.5077 2.6218 0.3120 5.6719 5.9363
+
+Running PRM Planner 
+Start Map Creation 
+Goal Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.70 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.3034 1.2240 1.5185 1.2405 1.1054
+
+
+goalQ =
+
+    4.9025 2.4488 1.5186 2.5379 0.6060
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  80 
+All nodes removed from final path list 
+Planner execution time was 2.92 seconds 
+plan of length 80 was found
+
+startQ =
+
+    1.5405 1.5478 1.3484 1.0785 1.1701
+
+
+goalQ =
+
+    2.2190 5.1597 0.0968 0.2703 1.0618
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  141 
+All nodes removed from final path list 
+Planner execution time was 2.69 seconds 
+plan of length 141 was found
+
+startQ =
+
+    1.4303 1.3864 1.2833 1.3336 1.2024
+
+
+goalQ =
+
+    4.6790 1.1872 4.3151 1.1530 2.3153
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  71 
+All nodes removed from final path list 
+Planner execution time was 3.04 seconds 
+plan of length 71 was found
+
+startQ =
+
+    1.4557 1.0897 1.5338 1.4534 1.3021
+
+
+goalQ =
+
+    2.7386 2.8072 1.9249 3.1951 3.2093
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  84 
+All nodes removed from final path list 
+Planner execution time was 3.23 seconds 
+plan of length 84 was found
+
+startQ =
+
+    1.4634 1.3846 1.2454 1.4721 1.3262
+
+
+goalQ =
+
+    2.2037 5.8999 5.5037 3.4567 3.9111
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  127 
+All nodes removed from final path list 
+Planner execution time was 2.60 seconds 
+plan of length 127 was found
+
+startQ =
+
+    1.1560 1.2049 1.2938 1.1679 1.4893
+
+
+goalQ =
+
+    1.2237 1.4195 1.0726 1.4305 2.7376
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 3.03 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.5307 1.2725 1.1440 1.5210 1.5602
+
+
+goalQ =
+
+    2.7575 0.6982 1.6215 2.5681 3.7378
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  149 
+All nodes removed from final path list 
+Planner execution time was 2.88 seconds 
+plan of length 149 was found
+
+startQ =
+
+    1.3628 1.4196 1.1633 1.1087 1.2025
+
+
+goalQ =
+
+    2.0029 2.6651 3.1910 0.5373 1.6492
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.83 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.0625 1.5335 1.4296 1.3030 1.3501
+
+
+goalQ =
+
+    1.4909 2.8830 6.0513 3.4357 3.2744
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Goal Node connected 
+Goal Node connected 
+Path created from start to goal node 
+Size of the graph created for PRM Planner: 10002
+Goal found 
+Backtrack complete 
+Size of final path before popping  41 
+All nodes removed from final path list 
+Planner execution time was 2.59 seconds 
+plan of length 41 was found
+
+startQ =
+
+    1.3032 1.3740 1.4028 1.2543 1.2396
+
+
+goalQ =
+
+    6.2077 0.2371 5.5617 5.7384 5.0026
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  107 
+All nodes removed from final path list 
+Planner execution time was 3.27 seconds 
+plan of length 107 was found
+
+startQ =
+
+    1.1843 1.2228 1.4031 1.1187 1.4248
+
+
+goalQ =
+
+    0.6708 4.1077 3.1050 4.8949 4.4927
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.80 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.5137 1.2222 1.4131 1.1508 1.0632
+
+
+goalQ =
+
+    4.6752 3.1417 3.0154 5.6845 3.8319
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  118 
+All nodes removed from final path list 
+Planner execution time was 2.49 seconds 
+plan of length 118 was found
+
+startQ =
+
+    1.4972 1.4690 1.3492 1.1430 1.1728
+
+
+goalQ =
+
+    5.5701 0.1802 3.0781 1.0551 6.1492
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  121 
+All nodes removed from final path list 
+Planner execution time was 2.70 seconds 
+plan of length 121 was found
+
+startQ =
+
+    1.3092 1.2939 1.0784 1.4043 1.0694
+
+
+goalQ =
+
+    0.4489 3.2776 0.6078 5.1406 5.1368
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 3.02 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.1257 1.3926 1.3187 1.5566 1.3870
+
+
+goalQ =
+
+    5.0286 2.8513 2.7168 5.1856 0.5245
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  147 
+All nodes removed from final path list 
+Planner execution time was 2.62 seconds 
+plan of length 147 was found
+
+startQ =
+
+    1.1380 1.2519 1.4825 1.4678 1.0789
+
+
+goalQ =
+
+    2.5086 3.3105 2.6188 4.1272 3.9457
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.58 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.2732 1.0553 1.5625 1.1347 1.1028
+
+
+goalQ =
+
+    2.3399 1.2448 3.0768 2.1331 5.9793
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.39 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.0748 1.4335 1.1881 1.2686 1.3341
+
+
+goalQ =
+
+    5.9234 2.6248 6.1767 1.8941 4.4051
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.35 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.3295 1.4127 1.3962 1.1405 1.1142
+
+
+goalQ =
+
+    6.2774 1.0752 0.2048 3.5261 5.5409
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  98 
+All nodes removed from final path list 
+Planner execution time was 2.63 seconds 
+plan of length 98 was found
+
+startQ =
+
+    1.1469 1.2404 1.2884 1.5612 1.1291
+
+
+goalQ =
+
+    5.3754 4.0512 2.3642 1.1996 2.6908
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.66 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.1103 1.3559 1.1656 1.2486 1.3524
+
+
+goalQ =
+
+    1.5821 1.8249 3.8773 1.6668 5.1797
+
+Running PRM Planner 
+Start Map Creation 
+Goal Node connected 
+Goal Node connected 
+Goal Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.77 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.4296 1.2273 1.3530 1.1036 1.5217
+
+
+goalQ =
+
+    5.5270 5.1381 1.6382 3.7345 0.1415
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.64 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.2109 1.1318 1.1408 1.2686 1.0965
+
+
+goalQ =
+
+    3.7606 2.9589 4.3728 4.3975 4.0120
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.34 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.0832 1.2145 1.3252 1.3899 1.2606
+
+
+goalQ =
+
+    5.1521 4.5136 6.0862 3.3385 2.0430
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.75 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.3671 1.4550 1.2689 1.0948 1.1867
+
+
+goalQ =
+
+    0.9655 1.7656 2.7651 3.3121 2.8741
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Goal Node connected 
+Goal Node connected 
+Goal Node connected 
+Path created from start to goal node 
+Size of the graph created for PRM Planner: 10002
+Goal found 
+Backtrack complete 
+Size of final path before popping  41 
+All nodes removed from final path list 
+Planner execution time was 2.68 seconds 
+plan of length 41 was found
+
+startQ =
+
+    1.3184 1.5413 1.3811 1.5486 1.1732
+
+
+goalQ =
+
+    4.2482 1.8162 4.2211 4.3677 0.4272
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  119 
+All nodes removed from final path list 
+Planner execution time was 2.47 seconds 
+plan of length 119 was found
+
+startQ =
+
+    1.1645 1.3969 1.4893 1.2276 1.4559
+
+
+goalQ =
+
+    4.2432 0.0422 3.7835 2.4302 5.7553
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  86 
+All nodes removed from final path list 
+Planner execution time was 2.83 seconds 
+plan of length 86 was found
+
+startQ =
+
+    1.2893 1.2694 1.2885 1.4505 1.2160
+
+
+goalQ =
+
+    4.9307 2.9616 0.2247 1.1051 4.5349
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.62 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.1272 1.2258 1.3652 1.1476 1.4338
+
+
+goalQ =
+
+    1.5259 5.7643 1.6906 4.8098 1.1854
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.41 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.0949 1.3489 1.4050 1.3334 1.2701
+
+
+goalQ =
+
+    4.0492 4.0691 4.2664 3.9948 5.9387
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.39 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.4186 1.1709 1.1097 1.3652 1.2829
+
+
+goalQ =
+
+    2.8823 4.1591 4.8398 2.2005 4.1595
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.65 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.4880 1.4833 1.1815 1.3684 1.3521
+
+
+goalQ =
+
+    3.3976 5.4660 1.6637 1.9985 0.7490
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  91 
+All nodes removed from final path list 
+Planner execution time was 2.56 seconds 
+plan of length 91 was found
+
+startQ =
+
+    1.3852 1.2982 1.3819 1.3324 1.3861
+
+
+goalQ =
+
+    3.4173 4.5305 3.2829 6.2436 1.3740
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  95 
+All nodes removed from final path list 
+Planner execution time was 2.85 seconds 
+plan of length 95 was found
+
+startQ =
+
+    1.1046 1.0805 1.2590 1.2820 1.2387
+
+
+goalQ =
+
+    4.7972 3.9452 4.8505 5.8613 6.1119
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.72 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.1199 1.4118 1.0963 1.3223 1.3249
+
+
+goalQ =
+
+    5.4107 3.0464 2.4722 4.2187 4.6575
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.48 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.2293 1.1257 1.3541 1.1845 1.0705
+
+
+goalQ =
+
+    4.7434 1.5255 2.7797 4.3216 2.2571
+
+Running PRM Planner 
+Start Map Creation 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  1 
+All nodes removed from final path list 
+Planner execution time was 2.41 seconds 
+plan of length 1 was found
+
+startQ =
+
+    1.2539 1.4050 1.4158 1.2788 1.0574
+
+
+goalQ =
+
+    2.0788 2.6660 1.6982 1.2381 5.1630
+
+Running PRM Planner 
+Start Map Creation 
+Start Node connected 
+Size of the graph created for PRM Planner: 10002
+Backtrack complete 
+Size of final path before popping  94 
+All nodes removed from final path list 
+Planner execution time was 2.62 seconds 
+plan of length 94 was found

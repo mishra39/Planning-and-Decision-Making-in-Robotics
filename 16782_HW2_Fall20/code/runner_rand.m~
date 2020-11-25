@@ -1,0 +1,26 @@
+a = pi/3;
+b = pi/2;
+tot_iter = 2;
+tic;
+time_success = 0;
+header_mat = ['Start
+dlmwrite('test.csv',
+for i=1:tot_iter
+	r = a + (b-a).*rand(1,5);
+	startQ = r;
+	c = 0;
+	d = 2*pi;
+	r2 = c + (d-c).*rand(1,5);
+	goalQ = r2
+	planner_id = 3
+	tstart = tic;
+	runtest('map2.txt',startQ, goalQ, planner_id);
+	tend = toc(tstart);
+	if (tend <=5)
+		time_success = time_success+ 1;
+	end
+end
+elapsedTime = toc;
+avgTime = elapsedTime / tot_iter;
+time_success = time_success*100 / tot_iter;
+

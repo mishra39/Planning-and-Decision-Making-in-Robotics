@@ -1,0 +1,2 @@
+So to summarize, what he was saying in lecture was that we should do backwards a* with multiple start states in 2d space to determine our heuristic values, where we have a single open list that contains all the start states. Our stop condition on our expansion loop is when nothing is left in our open list. Use an explicit 2d array to do this. Is this correct? -1293,-217,108
+-286,17,16824
