@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <queue>
+#include <chrono>
 
 #define SYMBOLS 0
 #define INITIAL 1
@@ -434,17 +435,6 @@ public:
         }
     }
 
-    GroundedAction(const GroundedAction& gAction)
-    {
-        this->name = gAction.name;
-        for (string ar:gAction.arg_values)
-        {
-            this->arg_values.push_back(ar);
-        }
-        this->gEffect = gAction.gEffect;
-        this->gPC = gAction.gPC;
-    }
-
     string get_name() const
     {
         return this->name;
@@ -805,22 +795,18 @@ public:
     int cost;
     int g_val;
     int h_val;
-    State* parent;
     bool stateValid;
 
     // Constructors for the class
     State(unordered_set<GroundedCondition, GroundedConditionHasher, GroundedConditionComparator> condition)
     {
         this->stateCond = condition;
-        this->parent = NULL;
     }
 
     State()
     {
-        this->parent = NULL;
-    }
 
-    // comparator for current state and a given state states
+    }
     bool operator==(const State stateB) const
     {
         if ((stateB.stateValid != this->stateValid) || (stateB.stateCond.size() != this->stateCond.size()))
@@ -845,117 +831,6 @@ class greaterF
         }
 };
 
-void dfs(int level, unordered_map<int,bool> visited,vector<string> all_symbols, vector<list<list<string>>>& symbPerms,list<string> arg_vals)
-{ 
-    // DFS finds all size of permutations of the symbol arguments
-    int n = all_symbols.size();
-
-    //  Base Case
-    if (level > n)
-    {
-        return;
-    }
-
-    for (int i = 0; i < n; ++i)
-    {
-        if (visited[i] == true)
-        {
-            continue;
-        }
-
-        visited[i] = true;
-        arg_vals.push_back(all_symbols[i]);
-        symbPerms[level].push_back(arg_vals);
-        dfs(level + 1, visited, all_symbols, symbPerms,arg_vals);
-
-        visited[i] = false;
-        arg_vals.pop_back();
-    }
-}
-
-void getPerms(vector<list<list<string>>>& symPerms, const unordered_set<string> symbols)
-{
-    vector<string> all_symbols;
-    unordered_map<int,bool> visited;
-    list<string> arg_vals;
-   
-    for (auto i:symbols)
-    {
-        all_symbols.push_back(i);
-    }
-    int n = all_symbols.size();
-    for (int i = 0; i < n; ++i)
-    { // Populate vector with 2D string lists
-        list<list<string>> perms;
-        symPerms.push_back(perms);
-    }
-    for (int i = 0; i <n; i++)
-    {
-        visited[i] = false;
-    }
-    dfs(0,visited,all_symbols,symPerms,arg_vals);
-    cout << "DFS completed" << endl;
-}
-list<GroundedAction> getGroundedActions(const unordered_set<string> env_symbols, const unordered_set<Action, ActionHasher,ActionComparator> env_actions)
-{
-    list<GroundedAction> groundedActions; // final list of grounded actions
-    vector<list<list<string>>> symPerms; // permutations of the symbols
-    getPerms(symPerms, env_symbols);
-
-    for (auto action: env_actions)
-    {
-        int size = action.get_args().size()-1;
-        for (auto currArgs: symPerms[size])
-        {
-            auto k = currArgs.begin();
-            // Create a grounded action for this set of symbols and actions
-            GroundedAction currGA(action.get_name(),currArgs);
-            for (auto groundedArgs: currArgs)
-            {
-                cout << "Current Args " << groundedArgs << endl;    
-            }
-            unordered_map<string,string> arg_map;
-
-            for (auto i:env_symbols)
-            {
-                arg_map[i] = i;
-            }
-            
-            for (auto s:action.get_args())
-            {
-                arg_map[s] = *k;
-                ++k;
-            }
-
-            // assign values (ground) to the effects
-            for (auto effect:action.get_effects())
-            {
-                list<string> arg_list;
-                for (auto arg_effect: effect.get_args())
-                {
-                    arg_list.push_back(arg_map[arg_effect]);
-                }
-                GroundedCondition gEffect(effect.get_predicate(),arg_list, effect.get_truth());
-                currGA.addEffectGrounded(gEffect);
-            }
-            // assign values (ground) to the effects
-            for (auto pc:action.get_preconditions())
-            {
-                list<string> arg_list;
-                for (auto pArg: pc.get_args())
-                {
-                    arg_list.push_back(arg_map[pArg]);
-                }
-                GroundedCondition gPC(pc.get_predicate(),arg_list, pc.get_truth());
-                currGA.addPCGrounded(gPC);
-            }
-          //  cout << "Pushing action: " << currGA << endl;
-            groundedActions.emplace_back(currGA);
-        }
-    }
-    
-    return groundedActions;
-}
 
 int heuristicCalc(const State currState, const State goal)
 {
@@ -977,12 +852,156 @@ int heuristicCalc(const State currState, const State goal)
     return h_val;
 }
 
+vector<vector<string>> findAllPermutationsUtil(vector<string> env_symbolsVect)
+{
+    if (env_symbolsVect.size() <= 1)
+    {
+        //cout << "Encountered Base Case" << endl;
+        return {env_symbolsVect};
+    }
+    vector<vector<string>> allPerms;
+    for (int i = 0 ; i < env_symbolsVect.size(); i++)
+    {
+        vector<string> temp(env_symbolsVect.begin(), env_symbolsVect.end());
+        temp.erase(temp.begin() + i);
+        auto res = findAllPermutationsUtil(temp);
+        //cout << "Found Permutations without the erased found for index: " << i << endl;
+        for (int j = 0 ; j < res.size(); j++)
+        {
+            vector<string> temp2 = res[j];
+            temp2.insert(temp2.begin(), env_symbolsVect[i]);
+            allPerms.push_back(temp2);
+        }
+    }
+    return allPerms;
+}
+
+void findAllPermutationsUtil2(int level, unordered_map<int,bool> visited, vector<string> env_symbols, 
+                             vector<vector<vector<string>>>& allPermutations, vector<string> symbol_args)
+{
+    int n = env_symbols.size();
+    if (level > n)
+    {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        if (visited[i] == true)
+        {
+            continue;
+        }
+
+        visited[i] = true;
+        symbol_args.push_back(env_symbols[i]);
+        allPermutations[level].push_back(symbol_args);
+        findAllPermutationsUtil2(level+1, visited,env_symbols,allPermutations, symbol_args);
+        visited[i] = false;
+        symbol_args.pop_back();
+    }
+}
+
+vector<vector<vector<string>>> findAllPermutations(vector<string> env_symbolsVect)
+{
+    vector<vector<vector<string>>> allPermutations;
+    unordered_map<int,bool> visited;
+    for (int i = 0; i < env_symbolsVect.size(); i++)
+    {
+        vector<vector<string>> args;
+        allPermutations.push_back(args);
+    }
+
+    for (int i = 0; i < env_symbolsVect.size(); i++)
+    {
+        visited[i] = false;
+    }
+    vector<string> symbolArgs;
+    findAllPermutationsUtil2(0,visited,env_symbolsVect,allPermutations, symbolArgs);
+    return allPermutations;
+}
+
+list<GroundedAction> getAllGroundedActions(unordered_set<string> env_symbols, unordered_set<Action, ActionHasher, ActionComparator> env_actions)
+{
+    // find all the permutations of the symbols
+    list<GroundedAction> allGroundedActions;
+    // store the symbols in a vector
+    vector<string> env_symbols_vect(env_symbols.begin(),env_symbols.end());
+    // Find all the possible permutations of the symbols
+    vector<vector<vector<string>>> allPermutations = findAllPermutations(env_symbols_vect);
+    int count = 0;
+    cout << "Printing Permutations Util2: " << endl;
+    for (int i = 0; i < 4; i ++)
+    {
+        for (int k = 0; k < allPermutations[i].size();k++)
+        {
+            for (auto s:allPermutations[i][k])
+            {
+               // cout << s << ", ";
+            }
+            count++;
+            //cout << endl;
+        }
+    }
+    cout << "Total Permutations Util2: " << count << endl;
+    // Step 2: Create Grounded Actions using symbols permutations and environment actions
+    for (auto action:env_actions)
+    {
+        int size = action.get_args().size()-1;
+        for (auto symbolVect:allPermutations[size])
+        {
+            list<string> newArgs(symbolVect.begin(),symbolVect.end());
+            GroundedAction newAction(action.get_name(), newArgs);
+            unordered_map<string, string> arg_map;
+            auto arg_val = newArgs.begin();
+
+            for (auto arg_name: action.get_args())
+            {
+                arg_map[arg_name] = *arg_val;
+                arg_val++;
+            }
+
+            for (auto symbol:env_symbols)
+            {
+                arg_map[symbol] = symbol;
+            }
+
+            // Ground Preconditions
+            for (auto pc:action.get_preconditions())
+            {
+                list<string> pc_args;
+                for (auto pc_arg : pc.get_args())
+                {
+                    pc_args.push_back(arg_map[pc_arg]);
+                }
+                GroundedCondition gPC(pc.get_predicate(), pc_args, pc.get_truth());
+                newAction.addPCGrounded(gPC);
+            }
+
+            // Ground Effects
+            for (auto effect : action.get_effects())
+            {
+                list<string> effect_args;
+                for (auto effect_arg : effect.get_args())
+                {
+                    effect_args.push_back(arg_map[effect_arg]);
+                }
+                GroundedCondition gEffect(effect.get_predicate(), effect_args, effect.get_truth());
+                newAction.addEffectGrounded(gEffect);
+            }
+                //cout << "New Action Created: " << newAction << endl;
+                allGroundedActions.push_back(newAction);
+        }
+    }
+    
+    return allGroundedActions;
+}
 list<GroundedAction> planner(Env* env)
 {
     // Use env to get all the actions
     // Ground the actions. A condition or action is defined in terms of arbitrary arguments,
     // while a grounded condition or action is defined in terms of the actual argument values, or the symbols.
-    list<GroundedAction> actions_list = getGroundedActions(env->get_symbols(), env->get_actions());
+    list<GroundedAction> actions;
+    list<GroundedAction> actions_list =  getAllGroundedActions(env->get_symbols(), env->get_actions());
     cout << "Size of grounded actions " << actions_list.size() << endl;
     // priority queue for actions
     priority_queue<State, vector<State>, greaterF> open_pq;
@@ -990,61 +1009,57 @@ list<GroundedAction> planner(Env* env)
     vector<State> visited;
     unordered_map<int,State> graph;
     unordered_map<int,GroundedAction> action_map;
+    unordered_map<int,State> parent;
+    int stateExpanded = 0; // counter for states expanded
     State currState, adjState, parentState;
-    //priority_queue<Node, vector<Node>, greater> > open_list;
     // Use GroundedAction method to get preconditions and effects
     // this is where you insert your planner
     // add initial and goal conditions from the environment grounded condition
     unordered_set<GroundedCondition, GroundedConditionHasher, GroundedConditionComparator> init_cond = env->get_init_condn();
     unordered_set<GroundedCondition, GroundedConditionHasher, GroundedConditionComparator> goal_cond = env->get_goal_condn();
-    
     State start(init_cond);
     State goal(goal_cond);
     start.g_val = 0;
     start.idx  = 0;
+    goal.idx = -1;
     start.h_val = heuristicCalc(start,goal);
     open_pq.push(start);
     graph[start.idx] = start;
-    int count = 0;
-    // Loop through all actions in the environment to create all possible action combination with symbols
-    list<GroundedAction> actions;
-    while(!open_pq.empty())
+    auto startTime = std::chrono::steady_clock::now();
+    while (!open_pq.empty())
     {
-        //cout << "Couter Expansion: " << ++count << endl;
         currState = open_pq.top();
         open_pq.pop();
 
-        // if state is closed, then skip it
+        //check if state is closed
         if (closed[currState.idx] == true)
         {
             continue;
         }
-
         closed[currState.idx] = true;
 
+        // check if current state is goal
         if (currState.h_val == 0)
         {
-            cout << "Goal found" << endl;
+            cout << "Goal found. Initiating Backtracking..."<< endl;
             break;
         }
 
-        // iterate over the actions
-        for (auto action : actions_list)
+        for (auto action:actions_list)
         {
-            //findNeighbor(currState,action,adjState);
             adjState.stateCond = currState.stateCond;
-            //  match a given grounded action preconditions with a condition
-            bool matchActionPC = true;
-            for (auto pc: action.getPreconditions())
+            // check if preconditions match
+            for (auto pc:action.getPreconditions())
             {
+                adjState.stateValid = true;
                 if (currState.stateCond.find(pc) == currState.stateCond.end())
                 {
-                    matchActionPC = false;
+                    adjState.stateValid = false;
                     break;
                 }
             }
-            
-            adjState.stateValid = matchActionPC;
+
+            // if preconditions match, insert the effects
             if (adjState.stateValid)
             {
                 for (auto effect:action.getEffects())
@@ -1052,97 +1067,77 @@ list<GroundedAction> planner(Env* env)
                     if (effect.get_truth())
                     {
                         adjState.stateCond.insert(effect);
-                        //cout << "Inserting Effect " << effect << endl;
                     }
                     else
                     {
                         effect.set_truth(true);
-                    // cout << "Erasing effect " << effect << endl;
                         adjState.stateCond.erase(effect);
                     }
                 }
-            }
 
-            if (adjState.stateValid)
-            {
-                // check if visited already
-                int neighborVisited = -1; // check if the adjState has been visited already
-                for (int i = 0; i < visited.size();++i)
+                // check if neighbor has been visited already
+                int neighborIdx = -1;
+                for (int i = 0; i < visited.size(); i++)
                 {
                     if (visited[i] == adjState)
                     {
-                        neighborVisited = i;
+                        neighborIdx = i;
                         break;
                     }
                 }
-
-                if (neighborVisited >= 0) // if visited already, check for g-value update
+                stateExpanded++;
+                if (neighborIdx >=0)
                 {
-                    if (!closed[neighborVisited] && (graph[neighborVisited].g_val > currState.g_val + 1))
+                    // check for g value update
+                    if (!closed[neighborIdx] && graph[neighborIdx].g_val > currState.g_val + 1)
                     {
-                        // Check if g values can be updated
-                        graph[neighborVisited].g_val = currState.g_val + 1;
-                        graph[neighborVisited].parent = &currState;
-                        GroundedAction newAction(action.get_name(), action.get_arg_values());
-                        action_map[neighborVisited] = newAction;
-                        open_pq.push(graph[neighborVisited]);
-
+                        graph[neighborIdx].g_val = currState.g_val + 1;
+                        open_pq.push(graph[neighborIdx]);
+                        parent[graph[neighborIdx].idx] = currState;
+                       // cout << action << endl;
+                        action_map.at(neighborIdx) = action; 
                     }
                 }
 
-                else
+                else // if the state has never been visited before
                 {
                     adjState.idx = graph.size();
-                    adjState.g_val = currState.cost + 1;
-                    adjState.h_val = heuristicCalc(adjState, goal);
-                    adjState.parent = &currState;
+                    adjState.g_val = currState.g_val + 1;
+                    adjState.h_val = heuristicCalc(adjState,goal);
+                    parent[adjState.idx] = currState;
                     graph[adjState.idx] = adjState;
+                    action_map.insert({adjState.idx,action});
+                  //  cout << action << endl;
                     visited.push_back(adjState);
                     open_pq.push(adjState);
-                    cout << "Action before insertion " << action << endl; 
-                    action_map.insert({adjState.idx,action});
                 }
-                //cout << "Current Action Applied " << action << endl;
-               /* cout << "Previous State: ";
-                for (auto cond:currState.stateCond)
-                {
-                    cout << cond;
-                }
-
-                cout << endl;
-
-                
-                cout << "New State: " ;
-                for (auto cond:adjState.stateCond)
-                {
-                    cout << cond ;
-                }
-
-                cout << endl;
-                cout << endl;
-                cout << endl;
-                cout << endl;*/
             }
-            //cout << "Current Action Applied " << action << endl;
         }
 
     }
-    // start backtracking
-    int currIdx = currState.idx;
-    while(0)
+    auto end = chrono::steady_clock::now();
+    chrono::duration<double> elapsed_seconds = end-startTime;
+    cout << "Total States Expanded: " << graph.size() << endl;
+    cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+    vector<int> finalPath;
+    while(1)
     {
-        
-        //actions.push_back(action_map[currIdx]);
-        if (currIdx == 0)
+        cout << currState.idx << endl;
+        finalPath.push_back(currState.idx);
+        if (parent[currState.idx].idx == 0)
         {
             break;
         }
-        currIdx = currState.parent->idx;
+        
+        currState = parent[currState.idx];
     }
-    actions.push_back(GroundedAction("MoveToTable", { "A", "B" }));
-    actions.push_back(GroundedAction("Move", { "C", "Table", "A" }));
-    actions.push_back(GroundedAction("Move", { "B", "Table", "C" }));
 
+    reverse(finalPath.begin(),finalPath.end());
+    for (auto i:finalPath)
+    {
+        actions.push_back(action_map.at(i));
+    }
+    
     return actions;
 }
 
@@ -1163,10 +1158,11 @@ int main(int argc, char* argv[])
     list<GroundedAction> actions = planner(env);
 
     cout << "\nPlan: " << endl;
-    for (GroundedAction gac : actions)
+    
+    /*for (GroundedAction gac : actions)
     {
         cout << gac << endl;
-    }
+    }*/
 
     return 0;
 }
